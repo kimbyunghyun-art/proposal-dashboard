@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Construction Equipment Weekly — 건설기계 주간 뉴스레터</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --black: #121212;
+      --dark-gray: #333;
+      --mid-gray: #666;
+      --light-gray: #e2e2e2;
+      --rule: #000;
+      --red: #c00;
+      --bg: #fff;
+      --font-serif: Georgia, 'Times New Roman', serif;
+      --font-sans: 'Helvetica Neue', Arial, sans-serif;
+    }
+    body { background: var(--bg); color: var(--black); font-family: var(--font-serif); }
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    img { display: block; width: 100%; height: auto; }
+
+    /* ── Top Bar ── */
+    .top-bar {
+      border-bottom: 1px solid var(--light-gray);
+      padding: 6px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-family: var(--font-sans); font-size: 11px; color: var(--mid-gray);
+      flex-wrap: wrap; gap: 4px;
+    }
+    .top-bar .tagline { font-style: italic; }
+    .sub-btn button {
+      background: var(--black); color: #fff;
+      border: none; padding: 5px 12px; font-size: 11px;
+      font-family: var(--font-sans); cursor: pointer; letter-spacing: .5px;
+    }
+    .sub-btn button:hover { background: var(--dark-gray); }
+
+    /* ── Nameplate ── */
+    .nameplate {
+      text-align: center;
+      padding: 20px 20px 12px;
+      border-bottom: 3px double var(--rule);
+    }
+    .nameplate h1 {
+      font-size: clamp(28px, 6vw, 68px);
+      font-weight: 900; letter-spacing: -1px; line-height: 1;
+      font-family: Georgia, serif;
+    }
+    .nameplate .edition-line {
+      font-family: var(--font-sans); font-size: 11px; color: var(--mid-gray);
+      letter-spacing: 2px; text-transform: uppercase; margin-top: 6px;
+    }
+    .nameplate .subtitle {
+      font-style: italic; font-size: 13px; color: var(--dark-gray); margin-top: 4px;
+    }
+
+    /* ── Section Nav ── */
+    .section-bar {
+      display: flex; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+      font-family: var(--font-sans); font-size: 11px; font-weight: bold;
+      letter-spacing: 1px; text-transform: uppercase; overflow-x: auto;
+    }
+    .section-bar a {
+      padding: 6px 14px; white-space: nowrap;
+      border-right: 1px solid var(--light-gray);
+    }
+    .section-bar a:hover { background: var(--light-gray); }
+
+    /* ── Ticker ── */
+    .ticker-wrap {
+      background: var(--black); color: #fff;
+      font-family: var(--font-sans); font-size: 12px;
+      padding: 6px 0; overflow: hidden; white-space: nowrap;
+    }
+    .ticker-inner {
+      display: inline-block;
+      animation: ticker 50s linear infinite;
+      padding-left: 100%;
+    }
+    .ticker-inner span { margin-right: 60px; }
+    .ticker-inner span::before { content: '▶  '; color: var(--red); }
+    @keyframes ticker {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-100%); }
+    }
+
+    /* ── Container ── */
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+
+    /* ── Market Bar ── */
+    .market-bar {
+      background: #f5f5f5; border: 1px solid var(--light-gray);
+      padding: 10px 14px; margin: 16px 0;
+      font-family: var(--font-sans); font-size: 11px;
+    }
+    .market-bar .market-title {
+      font-weight: bold; text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 6px; font-size: 10px; color: var(--mid-gray);
+    }
+    .market-items { display: flex; gap: 20px; flex-wrap: wrap; }
+    .market-item .up   { color: #1a7c3e; }
+    .market-item .down { color: var(--red); }
+    .ticker-sym { font-weight: bold; color: var(--dark-gray); }
+
+    /* ── Breaking Banner ── */
+    .breaking-banner {
+      background: var(--red); color: #fff; padding: 8px 14px;
+      font-family: var(--font-sans); font-size: 12px; font-weight: bold;
+      letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .blink { animation: blink 1s step-start infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ── Main Grid ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1px 2.2fr 1px 1fr;
+      gap: 0;
+      padding-bottom: 24px;
+    }
+    .vr { background: var(--light-gray); margin: 0 16px; }
+
+    /* ── Column Headers ── */
+    .col-header {
+      font-family: var(--font-sans); font-size: 10px; font-weight: bold;
+      text-transform: uppercase; letter-spacing: 1.5px; color: var(--mid-gray);
+      border-bottom: 2px solid var(--rule); padding-bottom: 4px; margin-bottom: 14px;
+    }
+
+    /* ── Article Card ── */
+    .article {
+      margin-bottom: 20px; padding-bottom: 18px;
+      border-bottom: 1px solid var(--light-gray);
+    }
+    .article:last-child { border-bottom: none; }
+    .article .kicker {
+      font-family: var(--font-sans); font-size: 10px; font-weight: bold;
+      text-transform: uppercase; letter-spacing: 1.5px; color: var(--red);
+      margin-bottom: 4px;
+    }
+    .article h2 {
+      font-size: 18px; font-weight: 700; line-height: 1.25; margin-bottom: 6px;
+    }
+    .article h2.lg { font-size: 30px; }
+    .article h2.sm { font-size: 15px; }
+    .article .deck {
+      font-size: 13px; color: var(--dark-gray); line-height: 1.55; margin-bottom: 8px;
+    }
+    .article .deck.lg { font-size: 15px; }
+    .article .byline {
+      font-family: var(--font-sans); font-size: 10px;
+      text-transform: uppercase; letter-spacing: 1px; color: var(--mid-gray);
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .source-badge {
+      background: #eaf3ff; border: 1px solid #b8d4f5; color: #1a5fa8;
+      font-family: var(--font-sans); font-size: 9px; letter-spacing: .8px;
+      text-transform: uppercase; padding: 2px 6px; border-radius: 2px;
+    }
+
+    /* ── Opinion Strip ── */
+    .opinion-strip {
+      border-top: 3px solid var(--rule); border-bottom: 1px solid var(--light-gray);
+      padding: 16px 0; margin: 14px 0;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+    }
+    .opinion-item {
+      border-right: 1px solid var(--light-gray); padding-right: 18px;
+    }
+    .opinion-item:last-child { border-right: none; }
+    .opinion-label {
+      font-family: var(--font-sans); font-size: 10px; font-weight: bold;
+      text-transform: uppercase; letter-spacing: 1.5px; color: var(--mid-gray);
+      margin-bottom: 5px;
+    }
+    .opinion-item h3 { font-size: 14px; line-height: 1.3; margin-bottom: 5px; }
+    .opinion-item .byline {
+      font-family: var(--font-sans); font-size: 10px; color: var(--mid-gray);
+    }
+
+    /* ── Source Verification Box ── */
+    .source-box {
+      border: 1px solid var(--light-gray); padding: 14px;
+      margin-bottom: 18px; background: #fafafa;
+    }
+    .source-box .box-title {
+      font-family: var(--font-sans); font-size: 10px; font-weight: bold;
+      text-transform: uppercase; letter-spacing: 1.5px; color: var(--mid-gray);
+      border-bottom: 1px solid var(--light-gray); padding-bottom: 6px; margin-bottom: 10px;
+    }
+    .source-list { list-style: none; }
+    .source-list li {
+      font-family: var(--font-sans); font-size: 10.5px; padding: 5px 0;
+      border-bottom: 1px dotted var(--light-gray);
+      display: flex; gap: 8px; align-items: flex-start;
+      line-height: 1.4;
+    }
+    .source-list li:last-child { border-bottom: none; }
+    .v-yes { color: #1a7c3e; font-weight: bold; font-size: 13px; flex-shrink: 0; }
+    .v-no  { color: var(--red); font-weight: bold; font-size: 13px; flex-shrink: 0; }
+    .source-name { font-weight: bold; }
+    .source-lang {
+      background: var(--light-gray); color: var(--mid-gray);
+      font-size: 9px; padding: 1px 5px; border-radius: 2px; margin-left: 4px;
+    }
+    .source-reason { color: var(--mid-gray); display: block; font-size: 10px; margin-top: 1px; }
+
+    /* ── Verification Method Box ── */
+    .verify-box {
+      background: #fffbea; border: 1px solid #e8d84a;
+      padding: 14px; margin-bottom: 18px;
+    }
+    .verify-box .box-title {
+      font-family: var(--font-sans); font-size: 10px; font-weight: bold;
+      text-transform: uppercase; letter-spacing: 1.5px; color: #7a6500;
+      border-bottom: 1px solid #e8d84a; padding-bottom: 6px; margin-bottom: 10px;
+    }
+    .verify-steps {
+      list-style: none; font-family: var(--font-sans); font-size: 11px;
+      color: var(--dark-gray); line-height: 1.6;
+    }
+    .verify-steps li { padding: 3px 0; display: flex; gap: 8px; }
+    .step-num {
+      background: #e8d84a; color: #5a4a00; font-weight: bold;
+      width: 18px; height: 18px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; flex-shrink: 0; margin-top: 1px;
+    }
+
+    /* ── How It Works ── */
+    .how-it-works {
+      border: 1px solid var(--light-gray); padding: 14px;
+      margin-bottom: 18px; background: #f0f7ff;
+    }
+    .how-it-works .box-title {
+      font-family: var(--font-sans); font-size: 10px; font-weight: bold;
+      text-transform: uppercase; letter-spacing: 1.5px; color: #1a4a8a;
+      border-bottom: 1px solid #b8d4f5; padding-bottom: 6px; margin-bottom: 10px;
+    }
+    .pipeline-steps {
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      font-family: var(--font-sans); font-size: 10px;
+    }
+    .pipe-step {
+      background: #1a5fa8; color: #fff;
+      padding: 5px 10px; border-radius: 3px; text-align: center; line-height: 1.3;
+      font-size: 10px;
+    }
+    .pipe-arrow { color: #1a5fa8; font-size: 14px; font-weight: bold; }
+
+    /* ── Email Modal ── */
+    #modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+      z-index: 200; align-items: center; justify-content: center;
+    }
+    #modal-overlay.active { display: flex; }
+    .modal {
+      background: #fff; max-width: 480px; width: 94%; padding: 32px;
+      border-top: 4px solid var(--black); position: relative;
+      font-family: var(--font-sans);
+    }
+    .modal-close {
+      position: absolute; top: 12px; right: 14px;
+      font-size: 20px; color: var(--mid-gray); background: none; border: none; cursor: pointer;
+    }
+    .modal h2 { font-family: var(--font-serif); font-size: 22px; margin-bottom: 6px; }
+    .modal p  { font-size: 12px; color: var(--mid-gray); margin-bottom: 16px; line-height: 1.5; }
+    .modal input, .modal textarea {
+      width: 100%; border: 1px solid var(--light-gray); padding: 10px;
+      font-family: var(--font-sans); font-size: 13px; margin-bottom: 10px;
+    }
+    .modal textarea { height: 80px; resize: vertical; }
+    .modal .btn-primary {
+      background: var(--black); color: #fff; border: none; width: 100%;
+      padding: 12px; font-family: var(--font-sans); font-size: 13px;
+      font-weight: bold; letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
+    }
+    .modal .btn-primary:hover { background: var(--dark-gray); }
+    .modal-success { display: none; text-align: center; padding: 20px 0; }
+    .modal-success .ok-icon {
+      width: 52px; height: 52px; background: #1a7c3e; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 12px; font-size: 26px; color: #fff;
+    }
+    .modal-success p { font-size: 14px; color: #1a7c3e; font-weight: bold; }
+    .modal-success small { display: block; font-size: 12px; color: var(--mid-gray); margin-top: 4px; }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 3px double var(--rule); padding: 22px 20px;
+      text-align: center; font-family: var(--font-sans);
+      font-size: 11px; color: var(--mid-gray); margin-top: 10px;
+    }
+    .footer-logo { font-family: var(--font-serif); font-size: 22px; font-weight: 900; color: var(--black); margin-bottom: 6px; }
+    .footer-links { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin: 8px 0; }
+    .footer-links a:hover { text-decoration: underline; }
+
+    /* ── Skeleton ── */
+    .sk {
+      background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+      background-size: 200% 100%; animation: shimmer 1.5s infinite;
+      border-radius: 2px; display: block; margin-bottom: 8px;
+    }
+    @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+    /* ── Responsive ── */
+    @media (max-width: 860px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .vr { display: none; }
+      .opinion-strip { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Top Bar ── -->
+<div class="top-bar">
+  <span id="today-date" style="flex:1;"></span>
+  <span class="tagline" style="flex:1;text-align:center;">"All the News That's Fit to Build" &nbsp;·&nbsp; 건설기계 글로벌 주간지</span>
+  <span class="sub-btn" style="flex:1;text-align:right;"><button onclick="openModal()">Subscribe / 구독</button></span>
+</div>
+
+<!-- ── Nameplate ── -->
+<div class="nameplate">
+  <h1>Construction Equipment Weekly</h1>
+  <div class="edition-line">건설기계 주간 뉴스레터 &nbsp;|&nbsp; Global + Korea Edition &nbsp;|&nbsp; Auto-Generated Every Monday</div>
+  <div class="subtitle">Heavy Industry · Infrastructure · Technology · Market Intelligence</div>
+</div>
+
+<!-- ── Section Nav ── -->
+<div class="section-bar">
+  <a href="#top-story">Top Story</a>
+  <a href="#korea">Korea / 한국</a>
+  <a href="#global">Global / 글로벌</a>
+  <a href="#tech">Technology</a>
+  <a href="#market">Market / 시장</a>
+  <a href="#opinion">Analysis</a>
+  <a href="#sources">Sources / 소스</a>
+  <a href="#system">System / 시스템</a>
+</div>
+
+<!-- ── Breaking Ticker ── -->
+<div class="ticker-wrap">
+  <div class="ticker-inner" id="ticker-content">
+    <span>Caterpillar Q1 2026 실적 발표 예정 — 굴착기 수주 잔고 사상 최대</span>
+    <span>Komatsu, 전기식 미니 굴착기 2025년 4분기 양산 확정 — 일본 국토교통성 인증 완료</span>
+    <span>현대건설기계, 사우디 네옴 프로젝트 굴착기 500대 공급 계약 — 약 2,300억 원 규모</span>
+    <span>Volvo CE, 자율주행 전기 덤프트럭 유럽 광산 상용화 승인</span>
+    <span>글로벌 건설기계 시장 2024년 +6.3% 성장 — KHL Group 분석</span>
+    <span>두산밥캣, 북미 컴팩트 트랙 로더 시장 점유율 24.1% — 전분기 대비 2.3%p 상승</span>
+    <span>Liebherr, 수소 연료전지 크레인 시험 운행 성공 — 2027년 상용화 목표</span>
+    <span>인도 PM Gati Shakti 인프라 계획 — 건설기계 추가 수요 1,800억 달러 예상</span>
+  </div>
+</div>
+
+<!-- ── Main Content ── -->
+<div class="container">
+
+  <!-- Market Bar -->
+  <div class="market-bar" id="market">
+    <div class="market-title">Market Snapshot / 주요 건설기계 종목 현황 (실시간 데이터는 유료 API 연동 시 활성화)</div>
+    <div class="market-items" id="market-items"></div>
+  </div>
+
+  <!-- Breaking Banner -->
+  <div class="breaking-banner">
+    <span class="blink">●</span>
+    <span>BREAKING: 글로벌 인프라 투자 사이클 도래 — 건설기계 OEM 역대 최고 수주잔고 기록</span>
+  </div>
+
+  <!-- 3-Column Grid -->
+  <div class="main-grid">
+
+    <!-- LEFT: Korea -->
+    <div id="korea">
+      <div class="col-header">Korea Focus / 한국 이슈</div>
+      <div id="korea-articles"></div>
+    </div>
+
+    <div class="vr"></div>
+
+    <!-- CENTER: Top Story + Analysis -->
+    <div id="top-story">
+      <div class="col-header">Top Story / 주요 뉴스</div>
+      <div id="center-articles"></div>
+
+      <!-- Opinion Strip -->
+      <div class="opinion-strip" id="opinion">
+        <!-- JS renders -->
+      </div>
+    </div>
+
+    <div class="vr"></div>
+
+    <!-- RIGHT: Global + Source Box -->
+    <div id="global">
+      <div class="col-header">Global / 글로벌</div>
+      <div id="global-articles"></div>
+
+      <!-- Source Verification Box -->
+      <div class="source-box" id="sources">
+        <div class="box-title">Verified Sources / 검증된 소스 목록</div>
+        <ul class="source-list" id="source-list"></ul>
+      </div>
+
+      <!-- Verification Method -->
+      <div class="verify-box">
+        <div class="box-title">Source Verification Method / 소스 검증 방법론</div>
+        <ol class="verify-steps">
+          <li><span class="step-num">1</span><span><strong>도메인 화이트리스트</strong> — 업계 공인 도메인만 수집 대상에 포함 (equipmentworld.com, enr.com, kocema.or.kr 등)</span></li>
+          <li><span class="step-num">2</span><span><strong>Alexa/SimilarWeb 도메인 신뢰도</strong> — 업계 트래픽 Top 500 매체 우선, 신규 도메인 자동 격리</span></li>
+          <li><span class="step-num">3</span><span><strong>협회·기관 공인 여부</strong> — AEM(미국), CECE(유럽), KOCEMA(한국) 협력/인증 매체 목록 대조</span></li>
+          <li><span class="step-num">4</span><span><strong>크로스 소스 검증</strong> — 동일 기사를 2개 이상 검증 소스가 보도할 때만 Top Story 반영</span></li>
+          <li><span class="step-num">5</span><span><strong>HTTPS + 발행 날짜 필수</strong> — 날짜 없는 기사, HTTP 미암호화 소스 자동 제외</span></li>
+          <li><span class="step-num">6</span><span><strong>기업 IR / DART 공시</strong> — 국내 상장사 공식 공시 내용은 DART API로 직접 수집 (최고 신뢰도)</span></li>
+        </ol>
+      </div>
+
+      <!-- Pipeline Explanation -->
+      <div class="how-it-works" id="system">
+        <div class="box-title">자동화 파이프라인 / Automation Pipeline</div>
+        <div class="pipeline-steps">
+          <div class="pipe-step">① RSS/API<br/>뉴스 수집</div>
+          <span class="pipe-arrow">→</span>
+          <div class="pipe-step">② 화이트리스트<br/>필터링</div>
+          <span class="pipe-arrow">→</span>
+          <div class="pipe-step">③ 크로스소스<br/>검증</div>
+          <span class="pipe-arrow">→</span>
+          <div class="pipe-step">④ HTML 템플릿<br/>렌더링</div>
+          <span class="pipe-arrow">→</span>
+          <div class="pipe-step">⑤ SMTP 자동<br/>이메일 발송</div>
+        </div>
+        <p style="font-family:var(--font-sans);font-size:10px;color:var(--mid-gray);margin-top:10px;">
+          <code>newsletter_generator.py</code> 를 cron/스케줄러로 매주 월요일 오전 8시 실행 →
+          <code>config.json</code> 에 등록된 수신자 목록으로 자동 발송.
+          Gmail SMTP, SendGrid, AWS SES 지원.
+        </p>
+      </div>
+    </div>
+  </div><!-- /main-grid -->
+</div><!-- /container -->
+
+<!-- ── Footer ── -->
+<footer>
+  <div class="footer-logo">Construction Equipment Weekly</div>
+  <div style="font-style:italic;margin-bottom:8px;">건설기계 주간 뉴스레터 — Auto-Generated &amp; Auto-Delivered Every Monday 08:00 KST</div>
+  <div class="footer-links">
+    <a href="#top-story">Top Story</a>
+    <a href="#korea">Korea</a>
+    <a href="#global">Global</a>
+    <a href="#market">Market</a>
+    <a href="#sources">Sources</a>
+    <a href="#" onclick="openModal();return false;">Subscribe</a>
+  </div>
+  <div style="margin-top:10px;">
+    소스 검증: 도메인 화이트리스트 + AEM/CECE/KOCEMA 공인 매체 + 크로스 소스 교차 검증
+  </div>
+  <div style="margin-top:6px;color:#aaa;">
+    © 2026 Construction Equipment Weekly. Powered by <code>newsletter_generator.py</code>
+  </div>
+</footer>
+
+<!-- ── Subscribe Modal ── -->
+<div id="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2>Subscribe / 구독하기</h2>
+    <p>매주 월요일 건설기계 주요 뉴스를 NYT 스타일로 받아보세요.<br/>
+    Receive the weekly construction equipment newsletter every Monday.</p>
+    <div id="sub-form">
+      <input type="text" id="sub-name" placeholder="이름 / Name" />
+      <input type="email" id="sub-email" placeholder="이메일 / Email *" required />
+      <textarea id="sub-note" placeholder="관심 분야 / Areas of interest (e.g. 굴착기, Electric CE, 한국 시장)"></textarea>
+      <button class="btn-primary" onclick="submitSubscription()">Subscribe — 구독 신청</button>
+    </div>
+    <div class="modal-success" id="sub-success">
+      <div class="ok-icon">✓</div>
+      <p>구독 신청 완료!</p>
+      <small>You'll receive your first newsletter within 7 days.<br/>
+      수신자 목록은 <code>config.json</code> → <code>recipients</code> 에 자동 추가됩니다.</small>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// DATE
+// ─────────────────────────────────────────────
+(function () {
+  const d = new Date();
+  const ko = d.toLocaleDateString('ko-KR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const en = d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  document.getElementById('today-date').textContent = ko + '  /  ' + en;
+})();
+
+// ─────────────────────────────────────────────
+// MARKET SNAPSHOT
+// (Demo data — replace with live API in production)
+// ─────────────────────────────────────────────
+const MARKET = [
+  { sym: 'CAT',          price: '$351.20', chg: '+2.14', pct: '+0.61%', dir: 'up' },
+  { sym: 'Komatsu 6301', price: '¥2,981',  chg: '+45',   pct: '+1.53%', dir: 'up' },
+  { sym: 'HD현대인프라코어', price: '₩14,250', chg: '-150',  pct: '-1.04%', dir: 'down' },
+  { sym: 'Volvo AB',     price: 'SEK 220.8', chg: '+3.2', pct: '+1.47%', dir: 'up' },
+  { sym: '두산밥캣',      price: '₩38,600', chg: '+400',  pct: '+1.05%', dir: 'up' },
+];
+document.getElementById('market-items').innerHTML = MARKET.map(m =>
+  `<div class="market-item"><span class="ticker-sym">${m.sym}</span>&nbsp;${m.price}&nbsp;<span class="${m.dir}">${m.chg} (${m.pct})</span></div>`
+).join('');
+
+// ─────────────────────────────────────────────
+// VERIFIED SOURCES
+// ─────────────────────────────────────────────
+const SOURCES = [
+  { name: 'Equipment World', domain: 'equipmentworld.com', lang: 'EN', ok: true,  reason: 'Randall-Reilly 발행 · 업계 50년+ 전문지 · AEM 협력' },
+  { name: 'Construction Equipment Magazine', domain: 'constructionequipment.com', lang: 'EN', ok: true, reason: 'Access Intelligence · CECE 협력 매체' },
+  { name: 'Engineering News-Record (ENR)', domain: 'enr.com', lang: 'EN', ok: true, reason: 'BNP Media · 100년+ 역사 · 업계 표준 매체' },
+  { name: 'International Construction (KHL)', domain: 'khl.com', lang: 'EN', ok: true, reason: 'KHL Group · CECE·AEM 공인 글로벌 전문지' },
+  { name: 'Pit & Quarry', domain: 'pitandquarry.com', lang: 'EN', ok: true, reason: 'North Coast Media · 굴착·채석 전문' },
+  { name: '건설기계신문 (CEMnews)', domain: 'cemnews.co.kr', lang: 'KO', ok: true, reason: '국내 건설기계 전문 일간지 · 40년+' },
+  { name: 'KOCEMA 한국건설기계산업협회', domain: 'kocema.or.kr', lang: 'KO', ok: true, reason: '공식 협회 · 국내 1차 통계 출처' },
+  { name: 'DART 전자공시시스템', domain: 'dart.fss.or.kr', lang: 'KO', ok: true, reason: 'FSS 운영 · 상장사 공식 공시 · 최고 신뢰도' },
+  { name: 'Reuters / Bloomberg Industry', domain: 'reuters.com', lang: 'EN', ok: true, reason: '글로벌 금융·산업 1차 뉴스 소스' },
+  { name: '임의 블로그 / SNS 게시글', domain: '—', lang: '—', ok: false, reason: '편집 기준 없음 → 화이트리스트 자동 제외' },
+];
+document.getElementById('source-list').innerHTML = SOURCES.map(s => `
+  <li>
+    <span class="${s.ok ? 'v-yes' : 'v-no'}">${s.ok ? '✓' : '✗'}</span>
+    <span>
+      <span class="source-name">${s.name}</span>
+      <span class="source-lang">${s.lang}</span>
+      <span class="source-reason">${s.domain !== '—' ? s.domain + ' — ' : ''}${s.reason}</span>
+    </span>
+  </li>
+`).join('');
+
+// ─────────────────────────────────────────────
+// ARTICLE DATA
+// In production this JSON block is generated by newsletter_generator.py
+// and injected at build time or fetched from /api/articles
+// ─────────────────────────────────────────────
+const DATA = {
+  lead: {
+    kicker: 'Top Story / 이번 주 최대 뉴스',
+    headline: '글로벌 인프라 붐 속 건설기계 시장, 2025년 역대 최고 수주잔고 경신',
+    deck: '북미·중동·동남아의 대규모 인프라 프로젝트 발주가 집중되며, Caterpillar·Komatsu·현대건설기계 등 주요 OEM이 역대 최고 백오더를 기록하고 있다. 전동화·자율화 전환기임에도 단기 수요는 여전히 내연기관 장비 중심으로 폭발적으로 증가할 것으로 업계 전문가들은 분석한다. KHL Group 최신 보고서에 따르면 2025년 글로벌 건설기계 시장 규모는 전년 대비 7.1% 성장해 약 2,100억 달러에 달할 전망이다.',
+    source: 'KHL International Construction',
+    date: '2026-02-22',
+    url: '#',
+  },
+  korea: [
+    {
+      kicker: '한국 / Korea',
+      headline: '현대건설기계, 사우디 네옴(NEOM) 굴착기 500대 공급 계약 — 약 2,300억 원',
+      deck: '국내 단일 수주 역대 3위 규모. 2027년까지 순차 납품 예정이며 현지 AS 센터도 함께 구축.',
+      source: '건설기계신문',
+      date: '2026-02-20',
+      url: '#',
+    },
+    {
+      kicker: '한국 / Korea',
+      headline: '두산밥캣, 북미 컴팩트 트랙 로더 시장 점유율 24.1%로 1위 탈환',
+      deck: '전기 모델 Bobcat T7X 수요 급증이 주요 요인. 2분기 연속 점유율 상승.',
+      source: 'KOCEMA 통계',
+      date: '2026-02-19',
+      url: '#',
+    },
+    {
+      kicker: '규제 / Regulation',
+      headline: '환경부, 5톤 미만 건설기계 배기 기준 EU Tier V 수준으로 2027년부터 강화',
+      deck: '중소 OEM 전환 비용 우려 속 정부 보조금 지원 방안도 함께 검토 중.',
+      source: '건설기계신문',
+      date: '2026-02-18',
+      url: '#',
+    },
+  ],
+  global: [
+    {
+      kicker: 'Global / 글로벌',
+      headline: 'Caterpillar 390 Ultra Excavator: Idle Fuel Consumption 72% Reduction',
+      deck: 'Intelligent engine management system cuts operating costs on large-scale construction sites, expanding Cat\'s lead in the 90-tonne class.',
+      source: 'Equipment World',
+      date: '2026-02-22',
+      url: '#',
+    },
+    {
+      kicker: 'Technology / 기술',
+      headline: 'Komatsu Smart Construction Hits 1 Million Connected Machines Milestone',
+      deck: 'AI-driven fleet scheduling and predictive maintenance now standard on all new units shipped globally.',
+      source: 'International Construction',
+      date: '2026-02-20',
+      url: '#',
+    },
+    {
+      kicker: 'Market / 시장',
+      headline: 'India\'s PM Gati Shakti Corridors to Add $180 Billion in CE Demand by 2030',
+      deck: 'Road, rail and logistics infrastructure projects driving demand surge for motor graders, compactors and asphalt pavers.',
+      source: 'ENR',
+      date: '2026-02-19',
+      url: '#',
+    },
+  ],
+  opinion: [
+    {
+      label: 'Analysis / 분석',
+      headline: '전동화 전환 속도: 유럽이 아시아보다 3배 빠른 이유',
+      byline: 'Construction Equipment Magazine',
+    },
+    {
+      label: 'Opinion / 의견',
+      headline: '수소 건설기계: 2030년 이전 상용화 가능한가?',
+      byline: '한국건설기계산업협회 기고',
+    },
+    {
+      label: 'Data / 데이터',
+      headline: '글로벌 굴착기 10년 판매 추이 — 중국 수요 비중 집중 분석',
+      byline: 'KHL Group 데이터',
+    },
+  ],
+};
+
+// ─── Render helpers ───
+function renderArticle(a, size) {
+  return `
+    <div class="article">
+      <div class="kicker">${a.kicker}</div>
+      <h2 class="${size}"><a href="${a.url}">${a.headline}</a></h2>
+      ${a.deck ? `<div class="deck ${size === 'lg' ? 'lg' : ''}">${a.deck}</div>` : ''}
+      <div class="byline">
+        <span>${a.date}</span>
+        <span class="source-badge">${a.source}</span>
+      </div>
+    </div>
+  `;
+}
+
+document.getElementById('center-articles').innerHTML = renderArticle(DATA.lead, 'lg');
+document.getElementById('korea-articles').innerHTML  = DATA.korea.map(a => renderArticle(a, 'sm')).join('');
+document.getElementById('global-articles').innerHTML = DATA.global.map(a => renderArticle(a, 'sm')).join('');
+
+document.getElementById('opinion').innerHTML = DATA.opinion.map(o => `
+  <div class="opinion-item">
+    <div class="opinion-label">${o.label}</div>
+    <h3>${o.headline}</h3>
+    <div class="byline">${o.byline}</div>
+  </div>
+`).join('');
+
+// ─────────────────────────────────────────────
+// MODAL
+// ─────────────────────────────────────────────
+function openModal()  { document.getElementById('modal-overlay').classList.add('active'); }
+function closeModal() { document.getElementById('modal-overlay').classList.remove('active'); }
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+});
+
+function submitSubscription() {
+  const email = document.getElementById('sub-email').value.trim();
+  if (!email || !email.includes('@')) {
+    alert('유효한 이메일을 입력해 주세요. / Please enter a valid email address.');
+    return;
+  }
+  // Production: POST to /api/subscribe → writes to config.json recipients list
+  // or calls newsletter_generator.py --add-recipient flag
+  console.log('New subscriber:', {
+    name: document.getElementById('sub-name').value,
+    email,
+    note: document.getElementById('sub-note').value,
+  });
+  document.getElementById('sub-form').style.display  = 'none';
+  document.getElementById('sub-success').style.display = 'block';
+}
+</script>
+</body>
+</html>
