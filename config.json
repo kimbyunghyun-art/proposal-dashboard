@@ -5,9 +5,9 @@
     "_comment_smtp": "Gmail: smtp.gmail.com:587 | Naver: smtp.naver.com:587 | Daum: smtp.daum.net:465 | SendGrid: smtp.sendgrid.net:587",
     "smtp_host":     "smtp.gmail.com",
     "smtp_port":     587,
-    "smtp_user":     "your-email@gmail.com",
-    "smtp_password": "YOUR_APP_PASSWORD_HERE",
-    "from_address":  "newsletter@your-domain.com",
+    "smtp_user":     "kimbyunghyun@gmail.com",
+    "smtp_password": "rksdogwhmkyjuxav",
+    "from_address":  "kimbyunghyun@gmail.com",
     "from_name":     "Construction Equipment Weekly"
   },
 
