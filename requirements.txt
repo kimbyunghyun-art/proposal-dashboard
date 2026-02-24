@@ -1,0 +1,7 @@
+# Construction Equipment Weekly — Python Dependencies
+# Install: pip install -r requirements.txt
+# All packages are OPTIONAL — stdlib fallbacks are available.
+
+requests==2.31.0          # HTTP requests (optional: falls back to urllib)
+beautifulsoup4==4.12.3    # HTML stripping (optional: falls back to HTMLParser)
+lxml==5.2.2               # Fast XML/HTML parser backend for bs4 (optional)

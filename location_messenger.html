@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Location Auto Messenger — 위치 자동 메시지 발송</title>
+  <style>
+    :root {
+      --black: #121212;
+      --dark: #1e293b;
+      --mid: #64748b;
+      --light: #e2e8f0;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --green: #16a34a;
+      --red: #dc2626;
+      --blue: #2563eb;
+      --orange: #ea580c;
+      --radius: 12px;
+      --shadow: 0 2px 12px rgba(0,0,0,.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--dark); min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--black); color: #fff;
+      padding: 16px 20px; display: flex; align-items: center; gap: 12px;
+    }
+    header .logo { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+    header .logo span { color: #60a5fa; }
+    header .subtitle { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+    .status-pill {
+      margin-left: auto; padding: 5px 12px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px;
+      background: #1e293b;
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .status-dot.active  { background: #22c55e; animation: pulse-dot 1.5s ease infinite; }
+    .status-dot.idle    { background: #64748b; }
+    .status-dot.error   { background: var(--red); }
+    @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(1.3)} }
+
+    /* ── Layout ── */
+    .container { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card); border-radius: var(--radius);
+      padding: 20px; box-shadow: var(--shadow);
+    }
+    .card-title {
+      font-size: 13px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--mid); margin-bottom: 16px;
+      padding-bottom: 10px; border-bottom: 1px solid var(--light);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-title .icon { font-size: 16px; }
+
+    /* ── Form elements ── */
+    label { display: block; font-size: 12px; font-weight: 600; color: var(--mid); margin-bottom: 5px; }
+    input, select, textarea {
+      width: 100%; border: 1.5px solid var(--light); border-radius: 8px;
+      padding: 10px 12px; font-size: 13px; font-family: inherit;
+      color: var(--dark); background: #fff; transition: border-color .2s;
+      margin-bottom: 14px;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none; border-color: var(--blue);
+    }
+    textarea { height: 80px; resize: vertical; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* ── Buttons ── */
+    .btn {
+      border: none; border-radius: 8px; padding: 10px 18px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn:hover  { opacity: .88; }
+    .btn-primary   { background: var(--blue);   color: #fff; width: 100%; justify-content: center; }
+    .btn-green     { background: var(--green);  color: #fff; }
+    .btn-red       { background: var(--red);    color: #fff; }
+    .btn-orange    { background: var(--orange); color: #fff; }
+    .btn-outline   { background: transparent; color: var(--blue); border: 1.5px solid var(--blue); }
+    .btn-sm        { padding: 6px 12px; font-size: 11px; border-radius: 6px; }
+
+    /* ── Location Card ── */
+    #gps-display {
+      background: var(--bg); border-radius: 8px; padding: 12px;
+      font-size: 12px; margin-bottom: 14px; line-height: 1.7;
+    }
+    #gps-display .coord { font-weight: 700; color: var(--dark); font-size: 14px; }
+    #gps-display .meta  { color: var(--mid); font-size: 11px; }
+    .accuracy-bar {
+      height: 4px; border-radius: 2px; background: var(--light); margin: 8px 0;
+      overflow: hidden;
+    }
+    .accuracy-bar-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width .5s; }
+
+    /* ── Target List ── */
+    #target-list { list-style: none; }
+    #target-list li {
+      background: var(--bg); border-radius: 8px; padding: 12px 14px;
+      margin-bottom: 8px; display: flex; align-items: flex-start; gap: 10px;
+      border-left: 3px solid var(--light); transition: border-color .3s;
+    }
+    #target-list li.near   { border-left-color: var(--orange); }
+    #target-list li.arrived{ border-left-color: var(--green);  background: #f0fdf4; }
+    .target-info { flex: 1; min-width: 0; }
+    .target-name { font-weight: 700; font-size: 13px; }
+    .target-meta { font-size: 11px; color: var(--mid); margin-top: 2px; }
+    .target-dist { font-size: 12px; font-weight: 600; color: var(--blue); }
+    .target-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .empty-msg { text-align: center; color: var(--mid); font-size: 13px; padding: 20px 0; }
+
+    /* ── Log ── */
+    #event-log {
+      font-size: 11px; font-family: 'Menlo', monospace;
+      background: #0f172a; color: #94a3b8; border-radius: 8px;
+      padding: 12px; height: 140px; overflow-y: auto;
+      line-height: 1.7;
+    }
+    #event-log .log-ok    { color: #4ade80; }
+    #event-log .log-warn  { color: #fbbf24; }
+    #event-log .log-err   { color: #f87171; }
+    #event-log .log-info  { color: #60a5fa; }
+    #event-log .ts        { color: #475569; margin-right: 4px; }
+
+    /* ── Map Placeholder ── */
+    #map-canvas {
+      width: 100%; height: 220px; border-radius: 8px;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      position: relative; overflow: hidden; margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .map-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(59,130,246,.15) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,.15) 1px, transparent 1px);
+      background-size: 30px 30px;
+    }
+    .map-dot {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #3b82f6; border: 3px solid #fff;
+      box-shadow: 0 0 0 6px rgba(59,130,246,.3);
+      animation: pulse-map 2s ease infinite;
+      position: absolute;
+    }
+    @keyframes pulse-map {
+      0%,100% { box-shadow: 0 0 0 6px rgba(59,130,246,.3); }
+      50%      { box-shadow: 0 0 0 14px rgba(59,130,246,.0); }
+    }
+    .target-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--orange); border: 2px solid #fff;
+      position: absolute;
+    }
+    .map-label {
+      position: absolute; bottom: 10px; left: 10px;
+      background: rgba(0,0,0,.5); color: #94a3b8;
+      font-size: 10px; padding: 4px 8px; border-radius: 4px;
+    }
+
+    /* ── Notification Toast ── */
+    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 1000; width: 300px; }
+    .toast {
+      background: #fff; border-radius: 10px; padding: 14px 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.18); margin-bottom: 10px;
+      border-left: 4px solid var(--green);
+      animation: slide-in .3s ease;
+    }
+    .toast.error  { border-left-color: var(--red); }
+    .toast.warn   { border-left-color: var(--orange); }
+    .toast-title  { font-weight: 700; font-size: 13px; margin-bottom: 3px; }
+    .toast-body   { font-size: 12px; color: var(--mid); }
+    @keyframes slide-in { from { transform: translateX(120%); } to { transform: translateX(0); } }
+
+    /* ── Send Method Tabs ── */
+    .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+    .tab {
+      flex: 1; padding: 8px; text-align: center;
+      border-radius: 8px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: 1.5px solid var(--light);
+      color: var(--mid); background: #fff; transition: all .2s;
+    }
+    .tab.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Stats ── */
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+    .stat-box {
+      background: var(--bg); border-radius: 8px; padding: 12px; text-align: center;
+    }
+    .stat-val { font-size: 22px; font-weight: 800; color: var(--dark); }
+    .stat-lbl { font-size: 10px; color: var(--mid); text-transform: uppercase; letter-spacing: 1px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div>
+    <div class="logo">📍 Location<span>Messenger</span></div>
+    <div class="subtitle">특정 장소 도착 시 자동 메시지 발송 · Auto-Message on Arrival</div>
+  </div>
+  <div class="status-pill">
+    <div class="status-dot idle" id="status-dot"></div>
+    <span id="status-text">대기 중</span>
+  </div>
+</header>
+
+<!-- ── Toast Container ── -->
+<div id="toast-container"></div>
+
+<div class="container">
+
+  <!-- ── Stats ── -->
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-val" id="stat-targets">0</div>
+      <div class="stat-lbl">등록 장소</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="stat-sent">0</div>
+      <div class="stat-lbl">발송 완료</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="stat-accuracy">—</div>
+      <div class="stat-lbl">GPS 정확도(m)</div>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <!-- ── Left Column ── -->
+    <div>
+
+      <!-- GPS Status -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-title"><span class="icon">🛰️</span> 현재 위치 / GPS Status</div>
+        <div id="map-canvas">
+          <div class="map-grid"></div>
+          <div class="map-dot" id="user-dot" style="left:50%;top:50%;transform:translate(-50%,-50%);"></div>
+          <div class="map-label">Live GPS · Browser Geolocation API</div>
+        </div>
+        <div id="gps-display">
+          <span class="meta">GPS를 시작하려면 아래 버튼을 누르세요</span>
+        </div>
+        <div class="accuracy-bar"><div class="accuracy-bar-fill" id="acc-bar" style="width:0%"></div></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-green" style="flex:1;" onclick="startGPS()">▶ GPS 시작</button>
+          <button class="btn btn-red btn-sm" onclick="stopGPS()">■ 중지</button>
+          <button class="btn btn-outline btn-sm" onclick="useCurrentAsTarget()">📍 현재 위치를 장소로</button>
+        </div>
+      </div>
+
+      <!-- Add Target Location -->
+      <div class="card">
+        <div class="card-title"><span class="icon">➕</span> 장소 등록 / Add Location</div>
+        <div class="row">
+          <div>
+            <label>위도 / Latitude</label>
+            <input type="number" id="inp-lat" step="0.000001" placeholder="37.5665" />
+          </div>
+          <div>
+            <label>경도 / Longitude</label>
+            <input type="number" id="inp-lng" step="0.000001" placeholder="126.9780" />
+          </div>
+        </div>
+        <label>장소 이름 / Location Name</label>
+        <input type="text" id="inp-name" placeholder="회사, 집, 건설 현장 A..." />
+        <label>도착 반경 (m) / Arrival Radius</label>
+        <input type="number" id="inp-radius" value="100" min="10" max="5000" />
+        <label>자동 발송 메시지 / Auto Message</label>
+        <textarea id="inp-message" placeholder="[도착 알림] {장소이름}에 도착했습니다. 현재 시각: {시간}"></textarea>
+
+        <!-- Send Method Tabs -->
+        <div class="card-title" style="margin-top:4px;"><span class="icon">📤</span> 발송 방법 / Send Method</div>
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab('email')">📧 이메일</div>
+          <div class="tab" onclick="switchTab('sms')">📱 SMS</div>
+          <div class="tab" onclick="switchTab('webhook')">🔗 Webhook</div>
+          <div class="tab" onclick="switchTab('kakao')">💬 카카오</div>
+        </div>
+
+        <div class="tab-panel active" id="tab-email">
+          <label>수신 이메일 / Recipient Email</label>
+          <input type="email" id="cfg-email" placeholder="recipient@example.com" />
+          <div style="font-size:11px;color:var(--mid);margin-top:-10px;margin-bottom:14px;">
+            실제 발송은 서버의 newsletter_generator.py SMTP 설정을 재사용합니다.
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-sms">
+          <label>수신 전화번호 / Phone Number</label>
+          <input type="tel" id="cfg-phone" placeholder="+821012345678" />
+          <label>SMS 서비스 / Provider</label>
+          <select id="cfg-sms-provider">
+            <option value="twilio">Twilio</option>
+            <option value="coolsms">CoolSMS (국내)</option>
+            <option value="nurigo">Nurigo / Solapi</option>
+          </select>
+          <label>API Key</label>
+          <input type="password" id="cfg-sms-key" placeholder="API Key (config.json에 저장됨)" />
+        </div>
+
+        <div class="tab-panel" id="tab-webhook">
+          <label>Webhook URL</label>
+          <input type="url" id="cfg-webhook" placeholder="https://hooks.slack.com/..." />
+          <div style="font-size:11px;color:var(--mid);margin-top:-10px;margin-bottom:14px;">
+            Slack Incoming Webhook, Discord Webhook, 사용자 정의 엔드포인트 지원
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-kakao">
+          <label>카카오 채널 / KakaoTalk Channel</label>
+          <input type="text" id="cfg-kakao" placeholder="카카오 비즈니스 채널 코드" />
+          <div style="font-size:11px;color:var(--mid);margin-top:-10px;margin-bottom:14px;">
+            Kakao Biz Message API 연동 (사전 채널 등록 필요)
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="addTarget()">➕ 장소 등록하기</button>
+      </div>
+    </div>
+
+    <!-- ── Right Column ── -->
+    <div>
+
+      <!-- Target List -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-title" style="justify-content:space-between;">
+          <span><span class="icon">🗺️</span> 등록된 장소 / Registered Locations</span>
+          <button class="btn btn-outline btn-sm" onclick="clearAll()">전체 삭제</button>
+        </div>
+        <ul id="target-list">
+          <li><span class="empty-msg">등록된 장소가 없습니다.<br/>왼쪽에서 장소를 추가해 주세요.</span></li>
+        </ul>
+      </div>
+
+      <!-- Message Send Settings -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-title"><span class="icon">⚙️</span> 발송 설정 / Settings</div>
+        <label>
+          <input type="checkbox" id="opt-once" checked />
+          &nbsp;장소 당 1회만 발송 (중복 방지) / Send once per location
+        </label>
+        <br/><br/>
+        <label>
+          <input type="checkbox" id="opt-notify" checked />
+          &nbsp;도착 시 브라우저 알림 / Browser notification on arrival
+        </label>
+        <br/><br/>
+        <label>체크 주기 / Check interval</label>
+        <select id="opt-interval">
+          <option value="5000">5초 (배터리 소모 높음)</option>
+          <option value="15000" selected>15초 (권장)</option>
+          <option value="30000">30초 (저전력)</option>
+          <option value="60000">1분 (최저전력)</option>
+        </select>
+        <label>도착 근접 알림 거리 (m) / Near-alert distance</label>
+        <input type="number" id="opt-near" value="300" min="50" max="2000" />
+      </div>
+
+      <!-- Event Log -->
+      <div class="card">
+        <div class="card-title" style="justify-content:space-between;">
+          <span><span class="icon">📋</span> 이벤트 로그 / Event Log</span>
+          <button class="btn btn-outline btn-sm" onclick="clearLog()">지우기</button>
+        </div>
+        <div id="event-log"><span class="log-info">[시스템] LocationMessenger 초기화 완료.</span><br/></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────────────────────
+const state = {
+  watching:   false,
+  watchId:    null,
+  currentPos: null,   // { lat, lng, accuracy }
+  targets:    [],     // array of target objects
+  sentSet:    new Set(),  // target IDs already messaged (once-per mode)
+  sentCount:  0,
+  intervalId: null,
+};
+
+// Load persisted targets from localStorage
+function loadTargets() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('lm_targets') || '[]');
+    state.targets = saved;
+    renderTargetList();
+  } catch (_) {}
+}
+
+function saveTargets() {
+  localStorage.setItem('lm_targets', JSON.stringify(state.targets));
+}
+
+loadTargets();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GPS
+// ─────────────────────────────────────────────────────────────────────────────
+function startGPS() {
+  if (!navigator.geolocation) {
+    showToast('오류', 'Geolocation API가 지원되지 않는 브라우저입니다.', 'error');
+    return;
+  }
+  requestNotificationPermission();
+  setStatus('active', 'GPS 추적 중');
+  addLog('info', 'GPS 위치 추적 시작...');
+
+  state.watchId = navigator.geolocation.watchPosition(
+    onGPSSuccess,
+    onGPSError,
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+  );
+  state.watching = true;
+
+  // Also start interval check (handles cases where watchPosition doesn't fire)
+  const interval = parseInt(document.getElementById('opt-interval').value);
+  state.intervalId = setInterval(checkArrival, interval);
+}
+
+function stopGPS() {
+  if (state.watchId !== null) navigator.geolocation.clearWatch(state.watchId);
+  if (state.intervalId)      clearInterval(state.intervalId);
+  state.watching = false;
+  setStatus('idle', '대기 중');
+  addLog('warn', 'GPS 추적 중지됨.');
+}
+
+function onGPSSuccess(pos) {
+  const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+  state.currentPos = { lat, lng, accuracy };
+
+  // Update UI
+  document.getElementById('gps-display').innerHTML = `
+    <div class="coord">${lat.toFixed(6)}°N, ${lng.toFixed(6)}°E</div>
+    <div class="meta">정확도: ±${Math.round(accuracy)}m &nbsp;·&nbsp; ${new Date().toLocaleTimeString('ko-KR')}</div>
+  `;
+  document.getElementById('stat-accuracy').textContent = Math.round(accuracy);
+
+  const pct = Math.max(0, Math.min(100, 100 - (accuracy / 20)));
+  document.getElementById('acc-bar').style.width = pct + '%';
+
+  addLog('ok', `위치 업데이트: ${lat.toFixed(5)}, ${lng.toFixed(5)} (±${Math.round(accuracy)}m)`);
+  checkArrival();
+}
+
+function onGPSError(err) {
+  const msgs = {
+    1: '위치 권한이 거부되었습니다. 브라우저 설정에서 위치 권한을 허용해 주세요.',
+    2: 'GPS 신호를 찾을 수 없습니다.',
+    3: 'GPS 응답 시간이 초과되었습니다.',
+  };
+  setStatus('error', '오류');
+  addLog('err', msgs[err.code] || `GPS 오류 (${err.code})`);
+  showToast('GPS 오류', msgs[err.code] || 'GPS 오류가 발생했습니다.', 'error');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GEOFENCE CHECK
+// ─────────────────────────────────────────────────────────────────────────────
+function haversineDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371000; // Earth radius in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) ** 2 +
+            Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+            Math.sin(dLng/2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function checkArrival() {
+  if (!state.currentPos) return;
+  const { lat, lng } = state.currentPos;
+  const nearDist = parseInt(document.getElementById('opt-near').value) || 300;
+  const onceOnly = document.getElementById('opt-once').checked;
+
+  state.targets.forEach(t => {
+    const dist = haversineDistance(lat, lng, t.lat, t.lng);
+    t.currentDist = Math.round(dist);
+
+    const li = document.getElementById(`target-${t.id}`);
+    if (!li) return;
+
+    li.querySelector('.target-dist').textContent = dist < 1000
+      ? `${Math.round(dist)}m`
+      : `${(dist/1000).toFixed(1)}km`;
+
+    if (dist <= t.radius) {
+      // ARRIVED
+      li.className = 'arrived';
+      if (!onceOnly || !state.sentSet.has(t.id)) {
+        state.sentSet.add(t.id);
+        triggerMessage(t, dist);
+      }
+    } else if (dist <= nearDist) {
+      li.className = 'near';
+    } else {
+      li.className = '';
+    }
+  });
+  renderTargetList();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MESSAGE SENDING
+// ─────────────────────────────────────────────────────────────────────────────
+function buildMessage(template, target) {
+  const now  = new Date().toLocaleString('ko-KR');
+  return template
+    .replace(/{장소이름}/g, target.name)
+    .replace(/{시간}/g, now)
+    .replace(/{반경}/g, target.radius + 'm')
+    .replace(/{거리}/g, (target.currentDist || 0) + 'm');
+}
+
+function triggerMessage(target, dist) {
+  const msg    = buildMessage(target.message, target);
+  const method = target.sendMethod;
+
+  addLog('ok', `🎉 도착! "${target.name}" (${Math.round(dist)}m) → ${method} 발송 중...`);
+  showToast(`📍 도착: ${target.name}`, `${Math.round(dist)}m 이내 진입. ${method} 발송!`, 'success');
+
+  if (document.getElementById('opt-notify').checked) {
+    sendBrowserNotification(target.name, msg);
+  }
+
+  switch (method) {
+    case 'email':   sendViaEmail(target, msg);   break;
+    case 'webhook': sendViaWebhook(target, msg); break;
+    case 'sms':     sendViaSMS(target, msg);     break;
+    case 'kakao':   sendViaKakao(target, msg);   break;
+  }
+
+  state.sentCount++;
+  document.getElementById('stat-sent').textContent = state.sentCount;
+}
+
+// Email: POSTs to local endpoint that uses newsletter_generator SMTP config
+function sendViaEmail(target, msg) {
+  const payload = {
+    to: target.emailTo,
+    subject: `[LocationMessenger] 도착 알림: ${target.name}`,
+    body: msg,
+  };
+  addLog('info', `📧 이메일 발송 → ${target.emailTo}`);
+  // In production: fetch('/api/send-email', { method:'POST', body: JSON.stringify(payload) })
+  // Uses SMTP config from config.json (same as newsletter_generator.py)
+  simulateSend('이메일', target.emailTo, msg);
+}
+
+// Webhook: Slack / Discord / Custom
+function sendViaWebhook(target, msg) {
+  if (!target.webhookUrl) { addLog('err', 'Webhook URL이 설정되지 않았습니다.'); return; }
+  addLog('info', `🔗 Webhook 발송 → ${target.webhookUrl.substring(0, 40)}...`);
+  fetch(target.webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: msg, username: 'LocationMessenger', icon_emoji: ':round_pushpin:' }),
+  })
+  .then(r => addLog(r.ok ? 'ok' : 'err', `Webhook ${r.ok ? '발송 완료' : '발송 실패'} (${r.status})`))
+  .catch(e => addLog('err', `Webhook 오류: ${e.message}`));
+}
+
+// SMS: via backend Python script (Twilio / CoolSMS / Nurigo)
+function sendViaSMS(target, msg) {
+  addLog('info', `📱 SMS 발송 → ${target.phone} (${target.smsProvider})`);
+  // Production: fetch('/api/send-sms', { method:'POST', body: JSON.stringify({...}) })
+  simulateSend('SMS', target.phone, msg);
+}
+
+// KakaoTalk Biz Message
+function sendViaKakao(target, msg) {
+  addLog('info', `💬 카카오 메시지 발송 → 채널 ${target.kakaoChannel}`);
+  simulateSend('카카오', target.kakaoChannel, msg);
+}
+
+function simulateSend(method, dest, msg) {
+  // Simulates backend call — replace with actual fetch() to Python backend
+  setTimeout(() => {
+    addLog('ok', `✓ ${method} 발송 완료 → ${dest}`);
+    addLog('info', `  메시지: ${msg.substring(0, 60)}${msg.length > 60 ? '...' : ''}`);
+  }, 500 + Math.random() * 800);
+}
+
+// Browser Push Notification
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function sendBrowserNotification(title, body) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(`📍 ${title}`, { body, icon: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@v14/assets/72x72/1f4cd.png' });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TARGET MANAGEMENT
+// ─────────────────────────────────────────────────────────────────────────────
+function addTarget() {
+  const lat     = parseFloat(document.getElementById('inp-lat').value);
+  const lng     = parseFloat(document.getElementById('inp-lng').value);
+  const name    = document.getElementById('inp-name').value.trim();
+  const radius  = parseInt(document.getElementById('inp-radius').value) || 100;
+  const message = document.getElementById('inp-message').value.trim()
+                  || '[도착 알림] {장소이름}에 도착했습니다. 현재 시각: {시간}';
+
+  if (!name || isNaN(lat) || isNaN(lng)) {
+    showToast('입력 오류', '위도, 경도, 장소 이름을 모두 입력해 주세요.', 'error');
+    return;
+  }
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    showToast('입력 오류', '유효한 위도(-90~90), 경도(-180~180)를 입력해 주세요.', 'error');
+    return;
+  }
+
+  const activeTab = document.querySelector('.tab.active').textContent.trim();
+  const target = {
+    id:         Date.now(),
+    name, lat, lng, radius, message,
+    sendMethod: activeTab.includes('이메일') ? 'email'
+              : activeTab.includes('SMS')    ? 'sms'
+              : activeTab.includes('Webhook')? 'webhook' : 'kakao',
+    emailTo:      document.getElementById('cfg-email').value.trim(),
+    phone:        document.getElementById('cfg-phone').value.trim(),
+    smsProvider:  document.getElementById('cfg-sms-provider').value,
+    webhookUrl:   document.getElementById('cfg-webhook').value.trim(),
+    kakaoChannel: document.getElementById('cfg-kakao').value.trim(),
+    currentDist:  null,
+  };
+
+  state.targets.push(target);
+  saveTargets();
+  renderTargetList();
+  updateMapDots();
+  addLog('ok', `장소 등록: "${name}" (${lat.toFixed(5)}, ${lng.toFixed(5)}) 반경 ${radius}m`);
+  showToast('등록 완료', `"${name}" 이(가) 등록되었습니다.`, 'success');
+
+  // Reset form
+  ['inp-lat','inp-lng','inp-name','inp-message'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('inp-radius').value = '100';
+}
+
+function removeTarget(id) {
+  state.targets = state.targets.filter(t => t.id !== id);
+  state.sentSet.delete(id);
+  saveTargets();
+  renderTargetList();
+  updateMapDots();
+  addLog('warn', `장소 삭제됨 (id: ${id})`);
+}
+
+function clearAll() {
+  if (!confirm('모든 등록 장소를 삭제하시겠습니까?')) return;
+  state.targets = [];
+  state.sentSet.clear();
+  saveTargets();
+  renderTargetList();
+  document.getElementById('map-canvas').querySelectorAll('.target-dot').forEach(d => d.remove());
+  addLog('warn', '모든 장소가 삭제되었습니다.');
+}
+
+function useCurrentAsTarget() {
+  if (!state.currentPos) {
+    showToast('오류', '먼저 GPS를 시작해 주세요.', 'error');
+    return;
+  }
+  document.getElementById('inp-lat').value = state.currentPos.lat.toFixed(6);
+  document.getElementById('inp-lng').value = state.currentPos.lng.toFixed(6);
+  showToast('현재 위치', '위도·경도가 입력란에 채워졌습니다. 이름을 입력 후 등록하세요.', 'warn');
+}
+
+function renderTargetList() {
+  const ul = document.getElementById('target-list');
+  document.getElementById('stat-targets').textContent = state.targets.length;
+
+  if (!state.targets.length) {
+    ul.innerHTML = '<li><span class="empty-msg">등록된 장소가 없습니다.<br/>왼쪽에서 장소를 추가해 주세요.</span></li>';
+    return;
+  }
+
+  ul.innerHTML = state.targets.map(t => {
+    const dist = t.currentDist !== null
+      ? (t.currentDist < 1000 ? `${t.currentDist}m` : `${(t.currentDist/1000).toFixed(1)}km`)
+      : '—';
+    const methodIcon = { email:'📧', sms:'📱', webhook:'🔗', kakao:'💬' }[t.sendMethod] || '📤';
+    return `
+      <li id="target-${t.id}">
+        <div class="target-info">
+          <div class="target-name">📍 ${t.name}</div>
+          <div class="target-meta">
+            ${t.lat.toFixed(4)}°, ${t.lng.toFixed(4)}° · 반경 ${t.radius}m · ${methodIcon} ${t.sendMethod}
+          </div>
+          <div class="target-meta" style="color:#94a3b8;margin-top:2px;font-size:10px;">
+            "${t.message.substring(0, 50)}${t.message.length > 50 ? '...' : ''}"
+          </div>
+        </div>
+        <div class="target-dist">${dist}</div>
+        <div class="target-actions">
+          <button class="btn btn-red btn-sm" onclick="removeTarget(${t.id})">✕</button>
+        </div>
+      </li>`;
+  }).join('');
+}
+
+function updateMapDots() {
+  const canvas = document.getElementById('map-canvas');
+  canvas.querySelectorAll('.target-dot').forEach(d => d.remove());
+
+  // Place target dots randomly around center (visual only — not real map)
+  state.targets.forEach((t, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'target-dot';
+    const angle = (i / Math.max(state.targets.length, 1)) * 2 * Math.PI;
+    const r = 60 + Math.random() * 40;
+    const x = 50 + r * Math.cos(angle) / 2.2;
+    const y = 50 + r * Math.sin(angle) / 2.2;
+    dot.style.cssText = `left:${x}%;top:${y}%;transform:translate(-50%,-50%);`;
+    dot.title = t.name;
+    canvas.appendChild(dot);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UI HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function setStatus(type, label) {
+  document.getElementById('status-dot').className = 'status-dot ' + type;
+  document.getElementById('status-text').textContent = label;
+}
+
+function addLog(type, msg) {
+  const log = document.getElementById('event-log');
+  const ts = new Date().toLocaleTimeString('ko-KR', { hour12: false });
+  const cls = { ok:'log-ok', warn:'log-warn', err:'log-err', info:'log-info' }[type] || 'log-info';
+  log.innerHTML += `<span class="ts">[${ts}]</span><span class="${cls}">${msg}</span><br/>`;
+  log.scrollTop = log.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('event-log').innerHTML = '';
+}
+
+function showToast(title, body, type = 'success') {
+  const tc = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type === 'error' ? 'error' : type === 'warn' ? 'warn' : ''}`;
+  toast.innerHTML = `<div class="toast-title">${title}</div><div class="toast-body">${body}</div>`;
+  tc.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['email', 'sms', 'webhook', 'kakao'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'tab-' + name);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEMO: auto-load example targets if empty
+// ─────────────────────────────────────────────────────────────────────────────
+if (!state.targets.length) {
+  const demo = [
+    {
+      id: 1, name: '서울 시청 (예시)', lat: 37.5665, lng: 126.9780, radius: 150,
+      message: '[도착 알림] {장소이름}에 도착했습니다. 현재 시각: {시간}',
+      sendMethod: 'email', emailTo: 'example@company.com',
+      phone: '', smsProvider: 'coolsms', webhookUrl: '', kakaoChannel: '',
+      currentDist: null,
+    },
+    {
+      id: 2, name: '강남역 (예시)', lat: 37.4980, lng: 127.0276, radius: 200,
+      message: '[현장 도착] {장소이름} 현장에 도착했습니다. ({시간})',
+      sendMethod: 'webhook', emailTo: '', webhookUrl: 'https://hooks.slack.com/example',
+      phone: '', smsProvider: 'coolsms', kakaoChannel: '',
+      currentDist: null,
+    },
+  ];
+  state.targets = demo;
+  saveTargets();
+  renderTargetList();
+  updateMapDots();
+  addLog('info', '데모 장소 2개가 로드되었습니다. GPS를 시작하면 추적을 시작합니다.');
+}
+</script>
+</body>
+</html>

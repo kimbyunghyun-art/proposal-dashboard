@@ -1,0 +1,111 @@
+{
+  "_comment": "Construction Equipment Weekly — Configuration File",
+
+  "email": {
+    "_comment_smtp": "Gmail: smtp.gmail.com:587 | Naver: smtp.naver.com:587 | Daum: smtp.daum.net:465 | SendGrid: smtp.sendgrid.net:587",
+    "smtp_host":     "smtp.gmail.com",
+    "smtp_port":     587,
+    "smtp_user":     "your-email@gmail.com",
+    "smtp_password": "YOUR_APP_PASSWORD_HERE",
+    "from_address":  "newsletter@your-domain.com",
+    "from_name":     "Construction Equipment Weekly"
+  },
+
+  "schedule": {
+    "day_of_week": "Monday",
+    "time_kst":    "08:00",
+    "crontab":     "0 8 * * 1"
+  },
+
+  "rss_feeds": [
+    {
+      "name":      "Equipment World",
+      "url":       "https://www.equipmentworld.com/rss",
+      "lang":      "en",
+      "max_items": 10
+    },
+    {
+      "name":      "Construction Equipment Magazine",
+      "url":       "https://www.constructionequipment.com/rss.xml",
+      "lang":      "en",
+      "max_items": 8
+    },
+    {
+      "name":      "Engineering News-Record (ENR)",
+      "url":       "https://www.enr.com/rss/2",
+      "lang":      "en",
+      "max_items": 8
+    },
+    {
+      "name":      "International Construction (KHL)",
+      "url":       "https://www.khl.com/international-construction/rss",
+      "lang":      "en",
+      "max_items": 8
+    },
+    {
+      "name":      "For Construction Pros",
+      "url":       "https://www.forconstructionpros.com/rss",
+      "lang":      "en",
+      "max_items": 6
+    },
+    {
+      "name":      "Construction Dive",
+      "url":       "https://www.constructiondive.com/feeds/news/",
+      "lang":      "en",
+      "max_items": 6
+    },
+    {
+      "name":      "건설기계신문 (CEMnews)",
+      "url":       "https://www.cemnews.co.kr/rss/allArticle.xml",
+      "lang":      "ko",
+      "max_items": 10
+    },
+    {
+      "name":      "매일경제 — 건설·부동산",
+      "url":       "https://www.mk.co.kr/rss/30100041/",
+      "lang":      "ko",
+      "max_items": 6
+    },
+    {
+      "name":      "한국경제 — 산업",
+      "url":       "https://www.hankyung.com/feed/industry",
+      "lang":      "ko",
+      "max_items": 6
+    }
+  ],
+
+  "source_verification": {
+    "_comment": "6-step verification methodology",
+    "steps": [
+      "1. Domain whitelist matching — only pre-approved domains collected",
+      "2. HTTPS protocol enforcement — non-HTTPS URLs auto-rejected",
+      "3. Publish date presence required — undated articles scored lower",
+      "4. Cross-source counting — Top Story requires ≥2 verified sources",
+      "5. Association accreditation — AEM/CECE/KOCEMA-affiliated sources +10 score",
+      "6. Keyword relevance scoring — construction equipment keyword hit count"
+    ],
+    "min_score_for_inclusion": 40,
+    "min_score_for_top_story": 70
+  },
+
+  "recipients": [
+    {
+      "email": "recipient1@example.com",
+      "name":  "수신자1"
+    },
+    {
+      "email": "recipient2@example.com",
+      "name":  "수신자2"
+    }
+  ],
+
+  "content": {
+    "newsletter_title":   "Construction Equipment Weekly",
+    "newsletter_subtitle":"건설기계 주간 뉴스레터",
+    "tagline":            "All the News That's Fit to Build",
+    "max_top_articles":   1,
+    "max_korea_articles": 4,
+    "max_global_articles":4,
+    "max_opinion_items":  3
+  }
+}
