@@ -90,12 +90,8 @@
 
   "recipients": [
     {
-      "email": "recipient1@example.com",
-      "name":  "수신자1"
-    },
-    {
-      "email": "recipient2@example.com",
-      "name":  "수신자2"
+      "email": "kbh@soosan.co.kr",
+      "name":  "김병현"
     }
   ],
 
