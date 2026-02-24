@@ -17,23 +17,46 @@ import datetime
 import html
 import json
 import logging
-import os
 import smtplib
 import sys
 import time
+import xml.etree.ElementTree as ET
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
+from urllib.request import urlopen, Request
 
-# ── Third-party (install via requirements.txt) ────────────────────────────────
+# ── Third-party (optional) ────────────────────────────────────────────────────
 try:
-    import feedparser          # RSS parsing
-    import requests            # HTTP requests
-    from bs4 import BeautifulSoup  # HTML parsing
-except ImportError as e:
-    sys.exit(f"[ERROR] Missing dependency: {e}\nRun: pip install -r requirements.txt")
+    import requests as _requests
+    def _http_get(url: str, timeout: int = 15) -> str:
+        r = _requests.get(url, headers={"User-Agent": "CEWeekly/1.0"}, timeout=timeout)
+        r.raise_for_status()
+        return r.text
+except ImportError:
+    def _http_get(url: str, timeout: int = 15) -> str:
+        req = Request(url, headers={"User-Agent": "CEWeekly/1.0"})
+        with urlopen(req, timeout=timeout) as resp:
+            return resp.read().decode("utf-8", errors="replace")
+
+try:
+    from bs4 import BeautifulSoup as _BS
+    def _strip_html(text: str) -> str:
+        return _BS(text, "lxml").get_text(" ", strip=True)
+except ImportError:
+    class _TextExtractor(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self._parts: list[str] = []
+        def handle_data(self, data: str):
+            self._parts.append(data)
+        def get_text(self) -> str:
+            return " ".join(self._parts)
+    def _strip_html(text: str) -> str:
+        p = _TextExtractor(); p.feed(text); return p.get_text()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG & LOGGING
@@ -162,50 +185,113 @@ class SourceVerifier:
 # ─────────────────────────────────────────────────────────────────────────────
 
 class RSSFetcher:
-    """Fetches and parses RSS/Atom feeds with timeout and retry."""
+    """
+    Fetches and parses RSS 2.0 / Atom 1.0 feeds using stdlib xml.etree.ElementTree.
+    No feedparser dependency required — works with any Python 3.8+ environment.
+    """
 
-    HEADERS = {
-        "User-Agent": "ConstructionEquipmentWeekly/1.0 (newsletter bot; contact@example.com)"
+    # XML namespaces used in Atom and common feed extensions
+    NS = {
+        "atom":    "http://www.w3.org/2005/Atom",
+        "content": "http://purl.org/rss/1.0/modules/content/",
+        "dc":      "http://purl.org/dc/elements/1.1/",
+        "media":   "http://search.yahoo.com/mrss/",
     }
 
     def __init__(self, verifier: SourceVerifier, timeout: int = 15):
         self.verifier = verifier
         self.timeout  = timeout
 
+    # ── Internal helpers ──────────────────────────────────────────────────────
+
+    @staticmethod
+    def _tag(ns: str, local: str) -> str:
+        return f"{{{ns}}}{local}"
+
+    @staticmethod
+    def _parse_date(text: Optional[str]) -> Optional[datetime.datetime]:
+        if not text:
+            return None
+        for fmt in (
+            "%a, %d %b %Y %H:%M:%S %z",   # RFC 2822 (RSS)
+            "%a, %d %b %Y %H:%M:%S GMT",
+            "%Y-%m-%dT%H:%M:%S%z",         # ISO 8601 (Atom)
+            "%Y-%m-%dT%H:%M:%SZ",
+            "%Y-%m-%d",
+        ):
+            try:
+                return datetime.datetime.strptime(text.strip(), fmt).replace(
+                    tzinfo=datetime.timezone.utc
+                )
+            except ValueError:
+                pass
+        return None
+
+    def _parse_rss(self, root: ET.Element) -> list[dict]:
+        """Parse RSS 2.0 <item> elements."""
+        items = []
+        for item in root.findall(".//item"):
+            def t(tag: str) -> str:
+                el = item.find(tag)
+                return el.text or "" if el is not None else ""
+
+            title   = t("title").strip()
+            link    = t("link").strip() or t("guid").strip()
+            summary = t("description").strip() or t(f'{{{self.NS["content"]}}}encoded').strip()
+            pubdate = t("pubDate").strip() or t(f'{{{self.NS["dc"]}}}date').strip()
+            items.append((title, link, summary, self._parse_date(pubdate)))
+        return items
+
+    def _parse_atom(self, root: ET.Element) -> list[dict]:
+        """Parse Atom 1.0 <entry> elements."""
+        ns = self.NS["atom"]
+        items = []
+        for entry in root.findall(f"{{{ns}}}entry"):
+            def t(tag: str) -> str:
+                el = entry.find(f"{{{ns}}}{tag}")
+                return (el.text or "").strip() if el is not None else ""
+
+            title   = t("title")
+            link_el = entry.find(f"{{{ns}}}link[@rel='alternate']") or entry.find(f"{{{ns}}}link")
+            link    = link_el.get("href", "") if link_el is not None else ""
+            summary = t("summary") or t("content")
+            pubdate = t("published") or t("updated")
+            items.append((title, link, summary, self._parse_date(pubdate)))
+        return items
+
+    # ── Public API ────────────────────────────────────────────────────────────
+
     def fetch_feed(self, feed_url: str, max_items: int = 10) -> list[dict]:
         log.info(f"Fetching RSS: {feed_url}")
         try:
-            resp = requests.get(feed_url, headers=self.HEADERS, timeout=self.timeout)
-            resp.raise_for_status()
-            feed = feedparser.parse(resp.text)
+            xml_text = _http_get(feed_url, timeout=self.timeout)
+            root = ET.fromstring(xml_text)
         except Exception as e:
             log.warning(f"  Failed to fetch {feed_url}: {e}")
             return []
 
+        # Detect format: RSS vs Atom
+        tag = root.tag.lower()
+        if "feed" in tag or self.NS["atom"] in tag:
+            raw_items = self._parse_atom(root)
+        else:
+            raw_items = self._parse_rss(root)
+
         articles = []
-        for entry in feed.entries[:max_items]:
-            pub = None
-            if hasattr(entry, "published_parsed") and entry.published_parsed:
-                pub = datetime.datetime(*entry.published_parsed[:6], tzinfo=datetime.timezone.utc)
-
-            link    = getattr(entry, "link", "")
-            title   = getattr(entry, "title", "")
-            summary = getattr(entry, "summary", "")
-            text    = f"{title} {BeautifulSoup(summary, 'html.parser').get_text()}"
-
-            vr = self.verifier.verify(link, text, pub)
+        for title, link, summary, pub in raw_items[:max_items]:
+            text = f"{title} {_strip_html(summary)}"
+            vr   = self.verifier.verify(link, text, pub)
             if not vr["ok"]:
                 log.debug(f"  SKIP [{vr['reason']}]: {title[:60]}")
                 continue
-
             articles.append({
-                "headline":    title,
-                "deck":        BeautifulSoup(summary, "html.parser").get_text()[:300],
-                "url":         link,
-                "source":      vr["source_name"],
-                "date":        pub.strftime("%Y-%m-%d") if pub else "—",
-                "score":       vr["score"],
-                "lang":        "ko" if any(ord(c) > 0x3000 for c in title) else "en",
+                "headline": title,
+                "deck":     _strip_html(summary)[:300],
+                "url":      link,
+                "source":   vr["source_name"],
+                "date":     pub.strftime("%Y-%m-%d") if pub else "—",
+                "score":    vr["score"],
+                "lang":     "ko" if any(ord(c) > 0x3000 for c in title) else "en",
             })
 
         log.info(f"  → {len(articles)} verified articles from {feed_url}")
