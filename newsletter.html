@@ -503,11 +503,14 @@
 // (Demo data — replace with live API in production)
 // ─────────────────────────────────────────────
 const MARKET = [
-  { sym: 'CAT',          price: '$351.20', chg: '+2.14', pct: '+0.61%', dir: 'up' },
-  { sym: 'Komatsu 6301', price: '¥2,981',  chg: '+45',   pct: '+1.53%', dir: 'up' },
-  { sym: 'HD현대인프라코어', price: '₩14,250', chg: '-150',  pct: '-1.04%', dir: 'down' },
-  { sym: 'Volvo AB',     price: 'SEK 220.8', chg: '+3.2', pct: '+1.47%', dir: 'up' },
-  { sym: '두산밥캣',      price: '₩38,600', chg: '+400',  pct: '+1.05%', dir: 'up' },
+  { sym: 'CAT',              price: '$351.20',  chg: '+2.14', pct: '+0.61%', dir: 'up' },
+  { sym: 'Komatsu 6301',     price: '¥2,981',   chg: '+45',   pct: '+1.53%', dir: 'up' },
+  { sym: 'HD현대건설기계 267270', price: '₩--,---', chg: '--',    pct: '--%',    dir: 'up' },
+  { sym: 'Volvo AB',         price: 'SEK 220.8', chg: '+3.2',  pct: '+1.47%', dir: 'up' },
+  { sym: '두산밥캣',           price: '₩38,600',  chg: '+400',  pct: '+1.05%', dir: 'up' },
+  { sym: '수산세보틱스 017550',  price: '₩--,---', chg: '--',    pct: '--%',    dir: 'up' },
+  { sym: '대모 317850',        price: '₩--,---', chg: '--',    pct: '--%',    dir: 'up' },
+  { sym: '현대에버다임 041440',  price: '₩--,---', chg: '--',    pct: '--%',    dir: 'up' },
 ];
 document.getElementById('market-items').innerHTML = MARKET.map(m =>
   `<div class="market-item"><span class="ticker-sym">${m.sym}</span>&nbsp;${m.price}&nbsp;<span class="${m.dir}">${m.chg} (${m.pct})</span></div>`

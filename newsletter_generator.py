@@ -116,7 +116,10 @@ class SourceVerifier:
         "dart.fss.or.kr":             {"name": "DART 전자공시시스템",              "tier": 1, "org": "FSS"},
         "hyundai-ce.com":             {"name": "현대건설기계 (IR)",               "tier": 1, "org": ""},
         "doosanbobcat.com":           {"name": "두산밥캣 (IR)",                  "tier": 1, "org": ""},
-        "hdinfracore.com":            {"name": "HD현대인프라코어 (IR)",            "tier": 1, "org": ""},
+        "hd-hyundaice.com":           {"name": "HD현대건설기계 (IR)",             "tier": 1, "org": ""},
+        "soosansepotics.com":         {"name": "수산세보틱스 (IR)",               "tier": 2, "org": ""},
+        "daemo.co.kr":                {"name": "대모엔지니어링 (IR)",             "tier": 2, "org": ""},
+        "hyundai-everdigm.com":       {"name": "현대에버다임 (IR)",               "tier": 2, "org": ""},
         "mk.co.kr":                   {"name": "매일경제",                       "tier": 2, "org": ""},
         "hankyung.com":               {"name": "한국경제",                       "tier": 2, "org": ""},
     }
@@ -129,7 +132,8 @@ class SourceVerifier:
     ]
     KEYWORDS_KO = [
         "굴착기", "불도저", "크레인", "로더", "건설기계", "중장비",
-        "현대건설기계", "두산밥캣", "HD현대인프라", "건설 장비", "중공업",
+        "현대건설기계", "두산밥캣", "HD현대건설기계", "건설 장비", "중공업",
+        "수산세보틱스", "대모엔지니어링", "현대에버다임",
         "KOCEMA", "인프라", "굴삭기",
     ]
 
@@ -480,6 +484,116 @@ def run(preview_only: bool = False):
     sender.send(recipients, subject, html_content)
 
 
+def validate_data() -> bool:
+    """
+    뉴스레터 데이터 유효성 점검 (--validate 플래그로 실행).
+
+    점검 항목:
+      1. 화이트리스트 도메인 접근 가능 여부 (HTTP HEAD 요청)
+      2. 주식 데이터 플레이스홀더 경고 (실시간 API 미연동 시)
+      3. config.json 필수 항목 (SMTP, 수신자) 설정 여부
+      4. RSS 피드 URL 접근 가능 여부
+    """
+    log.info("=== 뉴스레터 데이터 유효성 점검 시작 ===")
+    all_ok = True
+
+    # ── 1. 화이트리스트 도메인 점검 ──────────────────────────────────────────
+    log.info("\n[1] 화이트리스트 소스 도메인 접근 점검")
+    verifier = SourceVerifier()
+    domain_results = []
+    for domain, meta in verifier.WHITELIST.items():
+        url = f"https://{domain}"
+        try:
+            req = Request(url, method="HEAD", headers={"User-Agent": "CEWeekly-Validator/1.0"})
+            with urlopen(req, timeout=8) as resp:
+                status = resp.status
+            ok = status < 400
+        except Exception as e:
+            status = str(e)
+            ok = False
+        symbol = "✓" if ok else "✗"
+        domain_results.append((symbol, domain, meta["name"], status))
+        if not ok:
+            all_ok = False
+            log.warning(f"  ✗ {domain} ({meta['name']}) — 접근 실패: {status}")
+        else:
+            log.info(f"  ✓ {domain} ({meta['name']}) — {status}")
+
+    # ── 2. 주식 데이터 플레이스홀더 경고 ─────────────────────────────────────
+    log.info("\n[2] 주식 데이터 점검")
+    STOCK_LIST = [
+        {"sym": "HD현대건설기계", "code": "267270", "market": "KOSPI"},
+        {"sym": "두산밥캣",       "code": "241560", "market": "KOSPI"},
+        {"sym": "수산세보틱스",    "code": "017550", "market": "KOSPI"},
+        {"sym": "대모",           "code": "317850", "market": "KOSDAQ"},
+        {"sym": "현대에버다임",    "code": "041440", "market": "KOSDAQ"},
+        {"sym": "CAT",            "code": "CAT",    "market": "NYSE"},
+        {"sym": "Komatsu",        "code": "6301",   "market": "TSE"},
+        {"sym": "Volvo AB",       "code": "VOLV-B", "market": "NASDAQ Stockholm"},
+    ]
+    template_path = BASE_DIR / "newsletter.html"
+    template_text = template_path.read_text(encoding="utf-8") if template_path.exists() else ""
+    for stock in STOCK_LIST:
+        if "₩--,---" in template_text or "$--" in template_text:
+            log.warning(f"  ⚠ {stock['sym']} ({stock['code']}, {stock['market']}) — 주가가 플레이스홀더(--) 상태입니다. 실시간 API 연동 필요.")
+            all_ok = False
+        else:
+            log.info(f"  ✓ {stock['sym']} ({stock['code']}, {stock['market']}) — 데이터 있음")
+
+    # ── 3. config.json 필수 항목 점검 ────────────────────────────────────────
+    log.info("\n[3] config.json 설정 점검")
+    try:
+        cfg = load_config()
+        email_cfg = cfg.get("email", {})
+        smtp_ok = bool(email_cfg.get("smtp_host") and email_cfg.get("smtp_user") and email_cfg.get("smtp_password"))
+        recipients = cfg.get("recipients", [])
+        if smtp_ok:
+            log.info(f"  ✓ SMTP 설정: {email_cfg['smtp_host']} / {email_cfg['smtp_user']}")
+        else:
+            log.warning("  ✗ SMTP 설정 누락 — config.json의 email 섹션을 확인하세요.")
+            all_ok = False
+        if recipients:
+            log.info(f"  ✓ 수신자: {len(recipients)}명 등록됨")
+        else:
+            log.warning("  ✗ 수신자 없음 — config.json에 recipients를 추가하세요.")
+            all_ok = False
+    except Exception as e:
+        log.error(f"  ✗ config.json 읽기 실패: {e}")
+        all_ok = False
+
+    # ── 4. RSS 피드 접근 점검 ─────────────────────────────────────────────────
+    log.info("\n[4] RSS 피드 접근 점검")
+    try:
+        cfg = load_config()
+        feeds = cfg.get("rss_feeds", [])
+        if not feeds:
+            log.warning("  ⚠ RSS 피드가 config.json에 등록되지 않았습니다.")
+        for feed in feeds:
+            feed_url = feed.get("url", "")
+            try:
+                req = Request(feed_url, headers={"User-Agent": "CEWeekly-Validator/1.0"})
+                with urlopen(req, timeout=10) as resp:
+                    feed_ok = resp.status < 400
+                if feed_ok:
+                    log.info(f"  ✓ {feed_url}")
+                else:
+                    log.warning(f"  ✗ {feed_url} — HTTP {resp.status}")
+                    all_ok = False
+            except Exception as e:
+                log.warning(f"  ✗ {feed_url} — {e}")
+                all_ok = False
+    except Exception:
+        pass
+
+    # ── 결과 요약 ─────────────────────────────────────────────────────────────
+    log.info("\n" + ("=" * 50))
+    if all_ok:
+        log.info("점검 결과: 모든 항목 정상 ✓")
+    else:
+        log.warning("점검 결과: 일부 항목 확인 필요 ⚠  (위 경고 메시지를 확인하세요)")
+    return all_ok
+
+
 def add_recipient(email: str, name: str = ""):
     cfg = load_config()
     cfg.setdefault("recipients", [])
@@ -498,7 +612,8 @@ def add_recipient(email: str, name: str = ""):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Construction Equipment Weekly Newsletter Generator")
-    parser.add_argument("--preview", action="store_true", help="Generate HTML only, do not send email")
+    parser.add_argument("--preview",  action="store_true", help="Generate HTML only, do not send email")
+    parser.add_argument("--validate", action="store_true", help="Validate sources, stocks, and config without sending")
     parser.add_argument("--add-recipient", nargs="+", metavar=("EMAIL", "NAME"),
                         help="Add a recipient to config.json")
     args = parser.parse_args()
@@ -507,5 +622,8 @@ if __name__ == "__main__":
         email = args.add_recipient[0]
         name  = args.add_recipient[1] if len(args.add_recipient) > 1 else ""
         add_recipient(email, name)
+    elif args.validate:
+        ok = validate_data()
+        sys.exit(0 if ok else 1)
     else:
         run(preview_only=args.preview)
